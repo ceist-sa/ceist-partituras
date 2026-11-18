@@ -1,0 +1,17 @@
+services:
+  partituras:
+    container_name: ceist-partituras
+    image: ghcr.io/ceist-sa/ceist-partituras:main
+    pull_policy: always
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - caddy
+    labels:
+      caddy: partituras.ceist.pt
+      caddy.reverse_proxy: "{{upstreams 3000}}"
+
+networks:
+  caddy:
+    external: true
