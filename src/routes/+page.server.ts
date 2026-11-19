@@ -29,11 +29,19 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		name: item.name,
 		composer: item.composer,
 		elsewhere: item.elsewhere,
-		parts: item.parts.map(({ name, href, instruments, size }) => ({ name, href, mine: instrument ? instruments.includes(instrument.id) : false, size }))
+		parts: item.parts.map(({ name, href, instruments, size }) => ({
+			name,
+			href,
+			mine: instrument ? instruments.includes(instrument.id) : false,
+			// The full score is of use to everyone, so it is never folded away with the other parts
+			score: instruments.includes('geral'),
+			size
+		}))
 	});
 
 	return {
-		instruments: INSTRUMENTS.map(({ id, name }) => ({ id, name })),
+		// For the choice of instrument the players come first and the conductor last
+		instruments: [...INSTRUMENTS.filter(({ id }) => id !== 'geral'), ...INSTRUMENTS.filter(({ id }) => id === 'geral')].map(({ id, name }) => ({ id, name })),
 		instrument: instrument ? { id: instrument.id, name: instrument.name } : null,
 		seasons: library.map((candidate) => candidate.season),
 		season: season?.season ?? '',

@@ -13,9 +13,10 @@
 	const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 </script>
 
-<!-- The parts of a piece: the member's own as buttons, the rest folded away -->
+<!-- The parts of a piece: the member's own and the full score as buttons, the rest folded away -->
 {#snippet piece(item: Piece)}
 	{@const mine = item.parts.filter((part) => part.mine)}
+	{@const shown = [...mine, ...item.parts.filter((part) => part.score && !part.mine)]}
 	<li class="border-t border-ink/15 py-4 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-6">
 		<div>
 			<h3 class="text-lg leading-snug font-bold">{item.name}</h3>
@@ -29,22 +30,23 @@
 					<p class="py-2 opacity-60">Ainda sem partituras.</p>
 				{/if}
 			{:else if data.instrument}
-				{#if mine.length > 0}
-					<ul class="flex flex-wrap gap-2">
-						{#each mine as part (part.href)}
-							<li><a href={part.href} target="_blank" rel="noopener" class="chip chip-solid">{part.name}</a></li>
-						{/each}
-					</ul>
-				{:else}
+				{#if mine.length === 0}
 					<p class="py-2 opacity-60">Sem parte de {data.instrument.name.toLowerCase()} nesta obra.</p>
 				{/if}
-				{#if item.parts.length > mine.length}
+				{#if shown.length > 0}
+					<ul class="flex flex-wrap gap-2">
+						{#each shown as part (part.href)}
+							<li><a href={part.href} target="_blank" rel="noopener" class="chip {part.mine ? 'chip-solid' : ''}">{part.name}</a></li>
+						{/each}
+					</ul>
+				{/if}
+				{#if item.parts.length > shown.length}
 					<details class="mt-2">
 						<summary class="label cursor-pointer py-1 text-xs opacity-70">
-							{mine.length > 0 ? 'Outras partes' : 'Todas as partes'} ({item.parts.length - mine.length})
+							{shown.length > 0 ? 'Outras partes' : 'Todas as partes'} ({item.parts.length - shown.length})
 						</summary>
 						<ul class="mt-2 flex flex-wrap gap-2">
-							{#each item.parts.filter((part) => !part.mine) as part (part.href)}
+							{#each item.parts.filter((part) => !part.mine && !part.score) as part (part.href)}
 								<li><a href={part.href} target="_blank" rel="noopener" class="chip text-sm">{part.name}</a></li>
 							{/each}
 						</ul>

@@ -11,23 +11,27 @@ export interface Instrument {
 	pattern: RegExp;
 }
 
-/** In the order of a score, with the full score last */
+/**
+ * In the order the parts of a piece are listed: the full score, then strings, woodwinds and brass from high
+ * to low, percussion, keyboards and choir
+ */
 export const INSTRUMENTS: Instrument[] = [
-	{ id: 'flauta', name: 'Flauta', pattern: /FLUT|FLAUT|PICCOLO/ },
-	{ id: 'oboe', name: 'Oboé', pattern: /OBOE|ENGLISH HORN|CORNE/ },
-	{ id: 'clarinete', name: 'Clarinete', pattern: /CLARINET/ },
-	{ id: 'fagote', name: 'Fagote', pattern: /BASSOON|BASSON|FAGOTE/ },
-	{ id: 'trompa', name: 'Trompa', pattern: /FRENCH HORN|TROMPA/ },
-	{ id: 'trompete', name: 'Trompete', pattern: /TRUMPET|TROMPETE/ },
-	{ id: 'trombone', name: 'Trombone e eufónio', pattern: /TROMBONE|EUFONIO|EUPHONIUM/ },
-	{ id: 'percussao', name: 'Percussão', pattern: /PANDEIRETA|PERCUS|TIMPAN/ },
-	{ id: 'teclas', name: 'Piano e cravo', pattern: /PIANO|CRAVO|HARPSICHORD/ },
-	{ id: 'coro', name: 'Coro', pattern: /\bCORO\b|CHOIR/ },
+	{ id: 'geral', name: 'Maestro', pattern: /GERAL|CONDUCTOR|SCORE/ },
 	{ id: 'violino', name: 'Violino', pattern: /VIOLIN/ },
 	{ id: 'viola', name: 'Viola', pattern: /VIOLA/ },
 	{ id: 'violoncelo', name: 'Violoncelo', pattern: /CELL|VIOLONCEL/ },
 	{ id: 'contrabaixo', name: 'Contrabaixo', pattern: /\bBASS\b|CONTRABAIX/ },
-	{ id: 'geral', name: 'Partitura geral', pattern: /GERAL|CONDUCTOR|SCORE/ }
+	{ id: 'flauta', name: 'Flauta', pattern: /FLUT|FLAUT|PICCOLO/ },
+	{ id: 'oboe', name: 'Oboé', pattern: /OBOE|ENGLISH HORN|CORNE/ },
+	{ id: 'clarinete', name: 'Clarinete', pattern: /CLARINET/ },
+	{ id: 'fagote', name: 'Fagote', pattern: /BASSOON|BASSON|FAGOTE/ },
+	{ id: 'trompete', name: 'Trompete', pattern: /TRUMPET|TROMPETE/ },
+	{ id: 'trompa', name: 'Trompa', pattern: /FRENCH HORN|TROMPA/ },
+	{ id: 'trombone', name: 'Trombone', pattern: /TROMBONE/ },
+	{ id: 'eufonio', name: 'Eufónio', pattern: /EUFONIO|EUPHONIUM/ },
+	{ id: 'percussao', name: 'Percussão', pattern: /PANDEIRETA|PERCUS|TIMPAN/ },
+	{ id: 'teclas', name: 'Piano e cravo', pattern: /PIANO|CRAVO|HARPSICHORD/ },
+	{ id: 'coro', name: 'Coro', pattern: /\bCORO\b|CHOIR/ }
 ];
 
 const STRINGS = ['violino', 'viola', 'violoncelo', 'contrabaixo'];
@@ -115,7 +119,11 @@ export function partLabel(file: string, folder: string): string {
 export function instrumentsOf(label: string): string[] {
 	const text = plain(label);
 	if (!text) return ['geral'];
-	const found = INSTRUMENTS.filter((instrument) => instrument.pattern.test(text)).map((instrument) => instrument.id);
+	// In the order the label names them: the part is first of all for the first one
+	const found = INSTRUMENTS.map((instrument) => ({ id: instrument.id, at: text.search(instrument.pattern) }))
+		.filter((match) => match.at >= 0)
+		.sort((a, b) => a.at - b.at)
+		.map((match) => match.id);
 	// "ARCOS" alone is one part for all the strings
 	if (/\bARCOS\b|\bSTRINGS\b/.test(text) && !found.some((id) => STRINGS.includes(id))) {
 		found.push(...STRINGS);
@@ -227,8 +235,11 @@ export function partName(label: string): string {
 	return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-/** Position of a part in a score, to list the parts of a piece in order */
+/**
+ * Position of a part in the list of a piece: that of the instrument it is first of all for, so that a horn
+ * part written out for clarinet stays with the horns. Parts for no known instrument go last.
+ */
 export function partOrder(instruments: string[]): number {
-	const positions = instruments.map((id) => INSTRUMENTS.findIndex((instrument) => instrument.id === id));
-	return positions.length > 0 ? Math.min(...positions) : INSTRUMENTS.length;
+	const position = INSTRUMENTS.findIndex((instrument) => instrument.id === instruments[0]);
+	return position >= 0 ? position : INSTRUMENTS.length;
 }

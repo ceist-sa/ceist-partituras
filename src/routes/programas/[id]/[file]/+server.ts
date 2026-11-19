@@ -4,8 +4,8 @@ import { instrumentById } from '$lib/parts';
 import { getLibrary, partsFor } from '$lib/server/library';
 import type { RequestHandler } from './$types';
 
-// /programas/<program>/violino.zip: every part of the program for one instrument (or "tudo"), one folder
-// per piece. The archive is put together as it is sent, so nothing is kept on the server.
+// /programas/<program>/violino.zip: every part of the program for one instrument, or for all of them with
+// "tudo". The archive is put together as it is sent, so nothing is kept on the server.
 export const GET: RequestHandler = async ({ params }) => {
 	const instrument = params.file.replace(/\.zip$/, '');
 	const known = instrument === 'tudo' ? { name: 'Todas as partes' } : instrumentById(instrument);
@@ -19,12 +19,20 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	// Names that are safe as files on any system
 	const safe = (name: string) => name.replace(/[\\/:*?"<>|^]/g, '-').trim();
-	const files = program.pieces.flatMap((piece) =>
+	// For one instrument the files go side by side, since their names already say the piece; a name used
+	// twice, or the whole program, gets one folder per piece
+	const wanted = program.pieces.flatMap((piece) =>
 		partsFor(piece.parts, instrument).map((part) => ({
-			name: `${safe([piece.composer, piece.name].filter(Boolean).join(' - '))}/${safe(part.file)}`,
+			folder: safe([piece.composer, piece.name].filter(Boolean).join(' - ')),
+			file: safe(part.file),
 			source: part.source
 		}))
 	);
+	const times = (file: string) => wanted.filter((other) => other.file.toLowerCase() === file.toLowerCase()).length;
+	const files = wanted.map(({ folder, file, source }) => ({
+		name: instrument === 'tudo' || times(file) > 1 ? `${folder}/${file}` : file,
+		source
+	}));
 	if (files.length === 0) {
 		error(404, 'Este programa não tem partes para este instrumento');
 	}
