@@ -1,4 +1,4 @@
-import { instrumentsOf, partLabel, partName, partOrder } from '$lib/parts';
+import { instrumentsOf, partLabel, partName, partOrder, voicesOf } from '$lib/parts';
 import type { Part } from '$lib/types';
 import { cached } from './cache';
 import { listPdfs, parseFolder, rawUrl } from './github';
@@ -61,11 +61,13 @@ export async function getLibrary(): Promise<LibrarySeason[]> {
 						.map((file) => {
 							const name = file.path.slice(file.path.lastIndexOf('/') + 1);
 							const label = partLabel(name, work);
+							const instruments = instrumentsOf(label);
 							return {
 								name: partName(label),
 								file: name,
 								href: `/pdf/${[folder.repo, folder.branch, ...file.path.split('/')].map(encodeURIComponent).join('/')}`,
-								instruments: instrumentsOf(label),
+								instruments,
+								voices: Object.fromEntries(instruments.map((id) => [id, voicesOf(label, id)]).filter(([, voices]) => voices.length > 0)),
 								size: file.size,
 								source: rawUrl(folder, file.path)
 							};
@@ -123,7 +125,15 @@ export function currentProgram(seasons: LibrarySeason[]): LibraryProgram | undef
 	return started.find((program) => !program.end || program.end >= now) ?? started[0];
 }
 
-/** The parts of a piece for an instrument; all of them for "tudo" */
-export function partsFor<T extends Part>(parts: T[], instrument: string): T[] {
-	return instrument === 'tudo' ? parts : parts.filter((part) => part.instruments.includes(instrument));
+/**
+ * The parts of a piece for an instrument; all of them for "tudo". With a voice, the parts of that voice and
+ * the ones that are for every voice.
+ */
+export function partsFor<T extends Part>(parts: T[], instrument: string, voice?: number): T[] {
+	if (instrument === 'tudo') return parts;
+	return parts.filter((part) => {
+		if (!part.instruments.includes(instrument)) return false;
+		const voices = part.voices[instrument];
+		return !voice || !voices || voices.includes(voice);
+	});
 }

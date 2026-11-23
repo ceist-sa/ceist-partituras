@@ -27,5 +27,7 @@ export interface Part {
 	href: string;
 	/** Ids of the instruments the part is for */
 	instruments: string[];
+	/** For the instruments the part gives a voice of: `{ flauta: [1, 2] }` for "Flauta I e II" */
+	voices: Record<string, number[]>;
 	size: number;
 }

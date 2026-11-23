@@ -1,15 +1,17 @@
 import { error } from '@sveltejs/kit';
 import { downloadZip } from 'client-zip';
-import { instrumentById } from '$lib/parts';
+import { instrumentById, voiceName } from '$lib/parts';
 import { getLibrary, partsFor } from '$lib/server/library';
 import type { RequestHandler } from './$types';
 
-// /programas/<program>/violino.zip: every part of the program for one instrument, or for all of them with
-// "tudo". The archive is put together as it is sent, so nothing is kept on the server.
+// /programas/<program>/violino.zip: every part of the program for one instrument (violino-2.zip for one of
+// its voices), or for all of them with "tudo". The archive is put together as it is sent, so nothing is kept on the server.
 export const GET: RequestHandler = async ({ params }) => {
-	const instrument = params.file.replace(/\.zip$/, '');
-	const known = instrument === 'tudo' ? { name: 'Todas as partes' } : instrumentById(instrument);
-	if (!params.file.endsWith('.zip') || !known) {
+	const [, instrument, number] = params.file.match(/^([a-z]+)(?:-([1-6]))?\.zip$/) ?? [];
+	const voice = number ? Number(number) : undefined;
+	const chosen = instrumentById(instrument);
+	const label = instrument === 'tudo' && !voice ? 'Todas as partes' : chosen && (voice ? voiceName(chosen, voice) : chosen.name);
+	if (!label) {
 		error(404, 'Instrumento desconhecido');
 	}
 	const program = (await getLibrary()).flatMap((season) => season.programs).find((candidate) => candidate.id === params.id);
@@ -22,7 +24,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	// For one instrument the files go side by side, since their names already say the piece; a name used
 	// twice, or the whole program, gets one folder per piece
 	const wanted = program.pieces.flatMap((piece) =>
-		partsFor(piece.parts, instrument).map((part) => ({
+		partsFor(piece.parts, instrument, voice).map((part) => ({
 			folder: safe([piece.composer, piece.name].filter(Boolean).join(' - ')),
 			file: safe(part.file),
 			source: part.source
@@ -47,7 +49,7 @@ export const GET: RequestHandler = async ({ params }) => {
 		}
 	}
 
-	const name = safe(`CEIST - ${program.name} ${program.season} - ${known.name}`);
+	const name = safe(`CEIST - ${program.name} ${program.season} - ${label}`);
 	return new Response(downloadZip(contents()).body, {
 		headers: {
 			'Content-Type': 'application/zip',

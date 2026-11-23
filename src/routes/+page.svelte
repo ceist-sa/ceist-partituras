@@ -111,20 +111,28 @@
 
 {#each data.programs as program (program.id)}
 	<section class="mt-8">
-		<header class="flex flex-wrap items-end gap-x-6 gap-y-3 rounded-2xl px-4 py-4 sm:px-6 {program.current ? 'bg-sage' : 'bg-ink/5'}">
-			<div class="min-w-0">
-				{#if program.current}
-					<p class="label text-xs">Em ensaio</p>
-				{/if}
-				<h2 class="text-2xl font-bold [overflow-wrap:anywhere]">{program.name}</h2>
-				<p class="text-sm opacity-70">{dateRange(program.start, program.end)}</p>
-			</div>
-			{#if program.download.files > 0}
-				<div class="ml-auto text-right max-sm:w-full max-sm:text-left">
-					<a href="/programas/{program.id}/{data.instrument?.id ?? 'tudo'}.zip" class="btn text-sm max-sm:w-full" download data-sveltekit-reload>
-						{data.instrument ? `Descarregar ${data.instrument.name.toLowerCase()}` : 'Descarregar tudo'}
-					</a>
-					<p class="mt-1 text-xs opacity-70">{count(program.download.files, 'PDF', 'PDF')} num ZIP, {fileSize(program.download.size)}</p>
+		<header class="rounded-2xl px-4 py-4 sm:px-6 {program.current ? 'bg-sage' : 'bg-ink/5'}">
+			{#if program.current}
+				<p class="label text-xs">Em ensaio</p>
+			{/if}
+			<h2 class="text-2xl font-bold [overflow-wrap:anywhere]">{program.name}</h2>
+			<p class="text-sm opacity-70">{dateRange(program.start, program.end)}</p>
+			{#if program.downloads.length > 0}
+				<!-- Every download looks the same, however many voices the instrument has -->
+				<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-ink/15 pt-3">
+					<span class="label mr-1 text-xs">Descarregar em ZIP</span>
+					{#each program.downloads as download (download.file)}
+						<a
+							href="/programas/{program.id}/{download.file}.zip"
+							class="chip chip-solid text-sm"
+							title="{count(download.files, 'PDF', 'PDF')}, {fileSize(download.size)}"
+							download
+							data-sveltekit-reload
+						>
+							{download.name}
+							<span class="text-xs opacity-70">{download.files} PDF</span>
+						</a>
+					{/each}
 				</div>
 			{/if}
 		</header>
