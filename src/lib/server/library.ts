@@ -10,6 +10,8 @@ import { fetchRepertoire } from './notion';
 export interface LibraryPart extends Part {
 	/** Where the file itself is */
 	source: string;
+	/** The hash git gives the file, which names its thumbnail */
+	sha: string;
 }
 
 export interface LibraryPiece {
@@ -69,7 +71,8 @@ export async function getLibrary(): Promise<LibrarySeason[]> {
 								instruments,
 								voices: Object.fromEntries(instruments.map((id) => [id, voicesOf(label, id)]).filter(([, voices]) => voices.length > 0)),
 								size: file.size,
-								source: rawUrl(folder, file.path)
+								source: rawUrl(folder, file.path),
+								sha: file.sha
 							};
 						})
 						.sort((a, b) => partOrder(a.instruments) - partOrder(b.instruments) || collator.compare(a.name, b.name));

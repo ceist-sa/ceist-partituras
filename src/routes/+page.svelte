@@ -13,51 +13,66 @@
 	const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 </script>
 
-<!-- The parts of a piece: the member's own and the full score as buttons, the rest folded away -->
+<!-- A part as its first page, with its name underneath. The page stays blank if it can't be drawn. -->
+{#snippet sheet(part: Piece['parts'][number])}
+	<li>
+		<a href={part.href} target="_blank" rel="noopener" class="group block">
+			<span class="block aspect-[210/297] overflow-hidden rounded-md bg-white shadow-sm ring-1 ring-ink/15 transition-shadow group-hover:shadow-md group-hover:ring-ink/40">
+				<img
+					src={part.thumb}
+					alt=""
+					loading="lazy"
+					decoding="async"
+					class="h-full w-full object-cover object-top"
+					onerror={(event) => (event.currentTarget as HTMLImageElement).remove()}
+				/>
+			</span>
+			<span class="mt-2 block text-sm leading-snug {part.mine ? 'font-bold' : ''}">{part.name}</span>
+		</a>
+	</li>
+{/snippet}
+
+{#snippet sheets(parts: Piece['parts'])}
+	<ul class="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-x-4 gap-y-5 sm:grid-cols-[repeat(auto-fill,minmax(8rem,1fr))]">
+		{#each parts as part (part.href)}
+			{@render sheet(part)}
+		{/each}
+	</ul>
+{/snippet}
+
+<!-- The parts of a piece: the member's own and the full score in sight, the rest folded away -->
 {#snippet piece(item: Piece)}
 	{@const mine = item.parts.filter((part) => part.mine)}
 	{@const shown = [...mine, ...item.parts.filter((part) => part.score && !part.mine)]}
-	<li class="border-t border-ink/15 py-4 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-6">
-		<div>
-			<h3 class="text-lg leading-snug font-bold">{item.name}</h3>
-			<p class="opacity-70">{item.composer}</p>
-		</div>
-		<div class="max-sm:mt-3">
+	<li class="border-t border-ink/15 py-5">
+		<h3 class="text-lg leading-snug font-bold">{item.name}</h3>
+		<p class="opacity-70">{item.composer}</p>
+		<div class="mt-3">
 			{#if item.parts.length === 0}
 				{#if item.elsewhere}
 					<a href={item.elsewhere} target="_blank" rel="noopener" class="chip">Abrir a pasta das partituras</a>
 				{:else}
-					<p class="py-2 opacity-60">Ainda sem partituras.</p>
+					<p class="opacity-60">Ainda sem partituras.</p>
 				{/if}
 			{:else if data.instrument}
 				{#if mine.length === 0}
-					<p class="py-2 opacity-60">Sem parte de {data.instrument.name.toLowerCase()} nesta obra.</p>
+					<p class="mb-3 opacity-60">Sem parte de {data.instrument.name.toLowerCase()} nesta obra.</p>
 				{/if}
 				{#if shown.length > 0}
-					<ul class="flex flex-wrap gap-2">
-						{#each shown as part (part.href)}
-							<li><a href={part.href} target="_blank" rel="noopener" class="chip {part.mine ? 'chip-solid' : ''}">{part.name}</a></li>
-						{/each}
-					</ul>
+					{@render sheets(shown)}
 				{/if}
 				{#if item.parts.length > shown.length}
-					<details class="mt-2">
+					<details class="mt-3">
 						<summary class="label cursor-pointer py-1 text-xs opacity-70">
 							{shown.length > 0 ? 'Outras partes' : 'Todas as partes'} ({item.parts.length - shown.length})
 						</summary>
-						<ul class="mt-2 flex flex-wrap gap-2">
-							{#each item.parts.filter((part) => !part.mine && !part.score) as part (part.href)}
-								<li><a href={part.href} target="_blank" rel="noopener" class="chip text-sm">{part.name}</a></li>
-							{/each}
-						</ul>
+						<div class="mt-3">
+							{@render sheets(item.parts.filter((part) => !part.mine && !part.score))}
+						</div>
 					</details>
 				{/if}
 			{:else}
-				<ul class="flex flex-wrap gap-2">
-					{#each item.parts as part (part.href)}
-						<li><a href={part.href} target="_blank" rel="noopener" class="chip text-sm">{part.name}</a></li>
-					{/each}
-				</ul>
+				{@render sheets(item.parts)}
 			{/if}
 		</div>
 	</li>

@@ -33,9 +33,10 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		name: item.name,
 		composer: item.composer,
 		elsewhere: item.elsewhere,
-		parts: item.parts.map(({ name, href, instruments, size }) => ({
+		parts: item.parts.map(({ name, href, instruments, size, sha }) => ({
 			name,
 			href,
+			thumb: `/miniaturas/${sha}.jpg`,
 			mine: instrument ? instruments.includes(instrument.id) : false,
 			// The full score is of use to everyone, so it is never folded away with the other parts
 			score: instruments.includes('geral'),
