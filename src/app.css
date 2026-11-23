@@ -98,3 +98,10 @@
     cursor: default;
   }
 }
+
+/* The index jumps to its places gently, for those who haven't asked for less motion */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
