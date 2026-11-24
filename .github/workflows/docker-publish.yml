@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      # The thumbnails trial, deployed next to the site from docker-compose.miniaturas.yaml
-      - miniaturas
     tags:
       - 'v*'
 
